@@ -1,0 +1,37 @@
+name: Endor Labs Scan
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  endor-scan:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Endor Labs CLI
+        run: |
+          curl https://api.endorlabs.com/download/latest/endorctl_linux_amd64 -o endorctl
+          chmod +x endorctl
+          sudo mv endorctl /usr/local/bin/
+
+      - name: Authenticate Endor Labs
+        run: |
+          echo '${{ secrets.ENDOR_API_CREDENTIALS }}' > creds.json
+          endorctl login --credentials-file creds.json
+
+      - name: Run scan
+        run: |
+          endorctl scan \
+            --path . \
+            --enable-sca \
+            --enable-secrets \
+            --enable-policy
+
+      - name: Upload results (optional)
+        run: |
+          endorctl results push
