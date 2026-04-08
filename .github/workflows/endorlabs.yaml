@@ -38,8 +38,8 @@ jobs:
           namespace: "crestdata.ssbu.vmry"
           # Disable OIDC and provide API credentials
           enable_github_action_token: false 
-          api_key: ${{ secrets.API_KEY }}
-          api_secret: ${{ secrets.API_SECRET }}
+          api_key: ${{ secrets.ENDOR_API_KEY }}
+          api_secret: ${{ secrets.ENDOR_API_SECRET }}
           
           # Standard scan options
           scan_dependencies: true
