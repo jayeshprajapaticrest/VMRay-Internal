@@ -21,8 +21,12 @@ jobs:
 
       - name: Authenticate Endor Labs
         run: |
-          echo '${{ secrets.ENDOR_API_CREDENTIALS }}' > creds.json
-          endorctl login --credentials-file creds.json
+          cat <<EOF > creds.json
+          {
+            "api_key": "${{ secrets.API_KEY }}",
+            "api_secret": "${{ secrets.API_SECRET }}"
+          }
+          EOF
 
       - name: Run scan
         run: |
