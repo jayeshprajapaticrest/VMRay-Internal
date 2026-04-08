@@ -27,7 +27,7 @@ jobs:
       - name: Endor Labs Scan
         uses: endorlabs/github-action@v1
         with:
-          namespace: "your-namespace-here"
+          namespace: "crestdata.ssbu.vmry"
           # Disable OIDC and provide API credentials
           enable_github_action_token: false 
           api_key: ${{ secrets.API_KEY }}
