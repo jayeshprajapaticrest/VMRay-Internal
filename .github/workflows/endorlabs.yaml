@@ -31,10 +31,7 @@ jobs:
       - name: Run scan
         run: |
           endorctl scan \
-            --path . \
-            --enable-sca \
-            --enable-secrets \
-            --enable-policy
+            --path .
 
       - name: Upload results (optional)
         run: |
