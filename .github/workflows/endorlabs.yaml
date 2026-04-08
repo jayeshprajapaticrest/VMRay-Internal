@@ -31,7 +31,8 @@ jobs:
       - name: Run scan
         run: |
           endorctl scan \
-            --path .
+            --path . \
+            --namespace "crestdata.ssbu.vmry"
 
       - name: Upload results (optional)
         run: |
