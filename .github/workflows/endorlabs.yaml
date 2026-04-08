@@ -1,39 +1,38 @@
-name: Endor Labs Scan
+name: Endor Labs Security Scan
 
 on:
   push:
-    branches: [main]
+    branches: [ "main" ]
   pull_request:
+    branches: [ "main" ]
 
 jobs:
   endor-scan:
     runs-on: ubuntu-latest
+    # Note: id-token permission is NOT required for API Key auth
+    permissions:
+      contents: read
+      pull-requests: write 
 
     steps:
-      - name: Checkout repo
+      - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Setup Endor Labs CLI
-        run: |
-          curl https://api.endorlabs.com/download/latest/endorctl_linux_amd64 -o endorctl
-          chmod +x endorctl
-          sudo mv endorctl /usr/local/bin/
+      # # Build step is required for accurate reachability analysis
+      # - name: Build Project
+      #   run: |
+      #     # Replace with your specific build command (e.g., npm install, mvn install)
+      #     npm install 
 
-      - name: Authenticate Endor Labs
-        run: |
-          cat <<EOF > creds.json
-          {
-            "api_key": "${{ secrets.API_KEY }}",
-            "api_secret": "${{ secrets.API_SECRET }}"
-          }
-          EOF
-
-      - name: Run scan
-        run: |
-          endorctl scan \
-            --path . \
-            --namespace "crestdata.ssbu.vmry"
-
-      - name: Upload results (optional)
-        run: |
-          endorctl results push
+      - name: Endor Labs Scan
+        uses: endorlabs/github-action@v1
+        with:
+          namespace: "your-namespace-here"
+          # Disable OIDC and provide API credentials
+          enable_github_action_token: false 
+          api_key: ${{ secrets.API_KEY }}
+          api_secret: ${{ secrets.API_SECRET }}
+          
+          # Standard scan options
+          scan_dependencies: true
+          enable_pr_comments: ${{ github.event_name == 'pull_request' }}
