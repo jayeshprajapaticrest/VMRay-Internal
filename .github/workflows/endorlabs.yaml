@@ -25,7 +25,7 @@ jobs:
       #     npm install
       - name: Debug Secret Presence
         run: |
-          if [ -z "${{ secrets.API_KEY }}" ]; then
+          if [ -z "${{ secrets.ENDOR_API_KEY }}" ]; then
             echo "SECRET IS EMPTY"
             exit 1
           else
