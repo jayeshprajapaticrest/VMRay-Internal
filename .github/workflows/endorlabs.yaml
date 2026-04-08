@@ -22,7 +22,15 @@ jobs:
       # - name: Build Project
       #   run: |
       #     # Replace with your specific build command (e.g., npm install, mvn install)
-      #     npm install 
+      #     npm install
+      - name: Debug Secret Presence
+        run: |
+          if [ -z "${{ secrets.API_KEY }}" ]; then
+            echo "SECRET IS EMPTY"
+            exit 1
+          else
+            echo "SECRET IS DEFINED"
+          fi
 
       - name: Endor Labs Scan
         uses: endorlabs/github-action@v1
