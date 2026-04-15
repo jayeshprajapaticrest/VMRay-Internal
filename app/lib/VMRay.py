@@ -34,8 +34,8 @@ class VMRay:
 
     def healthcheck(self):
         """
-        Healtcheck for VMRay REST API, uses system_info endpoint
-        :raise: When healtcheck error occured during the connection wih REST API
+        Healthcheck for VMRay REST API, uses system_info endpoint
+        :raise: When healthcheck error occurred during the connection with REST API
         :return: boolean status of VMRay REST API
         """
         self.log.debug("healthcheck function is invoked")
@@ -84,14 +84,14 @@ class VMRay:
             url = f"/rest/sample/sha256/{identifier}".format(identifier)
         try:
             response = self.api.call(method, url)
-            if len(response) == 0:
+            if not response or (isinstance(response, list) and len(response) == 0):
                 self.log.debug(
                     f"Sample {identifier} couldn't be found in VMRay database.".format(identifier))
                 return None
             else:
                 self.log.debug(
                     f"Sample {identifier} retrieved from VMRay".format(identifier))
-                return response[0]
+                return response
         except Exception as err:
             self.log.debug(
                 "Sample {} couldn't be found in VMRay database. Error: {}".format(identifier, err))
@@ -113,7 +113,8 @@ class VMRay:
                 url = f"/rest/sample/{sample_id}/iocs/verdict/{key}"
                 response = self.api.call("GET", url)
 
-                iocs[key] = response
+                if response is not None:
+                    iocs[key] = response
                 self.log.debug(
                     f"IOC reports for {sample_id} retrieved from VMRay".format(sample_id))
             except Exception as err:
@@ -165,10 +166,10 @@ class VMRay:
             "sample_sha256hash",
             "sample_webif_url",
             "sample_classification",
-            "sample_thread_name",
+            "sample_threat_names",
         ]
         if sample_summary is not None:
-            if type(sample_summary) == type(list):
+            if isinstance(sample_summary, list):
                 sample_summary = sample_summary[0]
             for key in keys:
                 if key in sample_summary:
@@ -255,7 +256,8 @@ class VMRay:
                     if "Ransomware" not in file["classifications"]:
                         for file_hash in file["hashes"]:
                             sha256.add(file_hash["sha256_hash"])
-                        filenames.update(file["filenames"])
+                        if file["filenames"] is not None:
+                            filenames.update(file["filenames"])
 
         file_iocs["sha256"] = sha256
         file_iocs["file_name"] = filenames
@@ -374,7 +376,6 @@ class VMRay:
         params["comment"] = self.config.SUBMISSION_COMMENT
         params["tags"] = ",".join(self.config.SUBMISSION_TAGS)
         params["user_config"] = json.dumps({"timeout": self.config.ANALYSIS_TIMEOUT})
-        params["analyzer_mode"] = self.config.DEFAULT_ANALYZER_MODE.value
         
         try:
             with io.open(sample.unzipped_path, "rb") as file_object:
@@ -383,7 +384,11 @@ class VMRay:
                     response = self.api.call(method, url, params=params)
                 except Exception as err:
                     self.log.error("Error while submitting sample to VMRay Sandbox: {}".format(err))
-                
+                    sample.vmray_submit_successfully = False
+                    sample.vmray_submission_id = None
+                    sample.vmray_sample_id = None
+                    return
+
                 if len(response["errors"]) > 0:
                     sample.vmray_submit_successfully = False
                     for error in response["errors"]:
@@ -414,7 +419,7 @@ class VMRay:
         # Adding timestamp and error_count for checking status and timeouts
         submission_objects = []
         for submission in submitted_samples:
-            if submission.downloaded_successfully:
+            if submission.downloaded_successfully and submission.vmray_submit_successfully:
                 submission_objects.append({"sample": submission,
                                         "timestamp": None,
                                         "error_count": 0})
@@ -424,7 +429,7 @@ class VMRay:
         # Wait for all submissions to finish or exceed timeout
         while len(submission_objects) > 0:
             time.sleep(VMRayConfig.ANALYSIS_JOB_TIMEOUT / 10)
-            for submission_object in submission_objects:
+            for submission_object in list(submission_objects):
                 try:
                     if not self.check_submission_error(submission_object['sample'].vmray_submission_id):
                         submission_object["error_count"] += 1
@@ -451,7 +456,7 @@ class VMRay:
                         continue
 
                 except Exception as err:
-                    # If 5 errors are occured, return status as not finished else try again
+                    # If 5 errors are occurred, return status as not finished else try again
                     if submission_object["error_count"] >= 5:
                         submission_object['sample'].vmray_submission_finished = False
                     else:
@@ -488,8 +493,13 @@ class VMRay:
         sample_summary = self.get_sample_summary(sample.sample_sha256)
         if sample_summary is None:
             return
+        # sha256 endpoint returns a list; normalize to a single dict
+        if isinstance(sample_summary, list):
+            if len(sample_summary) == 0:
+                return
+            sample_summary = sample_summary[0]
         sample_metadata = self.parse_sample_summary_data(sample_summary)
-        sample.vmray_metadata = sample_metadata    
+        sample.vmray_metadata = sample_metadata
         sample_ioc = self.get_sample_iocs(sample_summary)
         parsed_sample_ioc = self.parse_sample_iocs(sample_ioc)
         sample.vmray_result = parsed_sample_ioc
@@ -522,10 +532,10 @@ class VMRay:
         analyses = self.get_submission_analyses(submission)
         if analyses is not None:
             for analysis in analyses:
-                if analysis["analysis_severity"] == "error":
-                    self.log.error(f"Analysis {analysis['analysis_id']} for submission {submission['submission_id']} has error: {analysis['analysis_result_str']}")
+                if analysis["analysis_result_code"] != 0:
+                    self.log.error(f"Analysis {analysis['analysis_id']} for submission {submission} has error: {analysis['analysis_result_str']}")
                     return False
         else:
-            self.log.error(f"Submission {submission['submission_id']} analyses couldn't retrieved from VMRay return is None")            
+            self.log.error(f"Submission {submission} analyses couldn't retrieved from VMRay return is None")
             return False
         return True

@@ -1,72 +1,42 @@
-from enum import Enum
 import pathlib
-from token import COMMENT
-from config.general_conf import GeneralConfig, VERDICT
+import logging as log
+from enum import Enum
+from dotenv import load_dotenv, find_dotenv
 
-# CrowdStrike DataSource
+load_dotenv(find_dotenv())
 
-
-class DATA_SOURCE(Enum):
-    QUARANTINE = "Quarantine"
-    DETECT = "Detect"
-
-class CrowdStrikeConfig():
-    # CrowdStrike Client ID
-    CLIENT_ID = "<CrowdStrike-Client-ID>"
+# VMRay verdicts
 
 
-    # CrowdStrike Client Secret
-    CLIENT_SECRET = "<CrowdStrike-Client-Secret>"
-
-
-    # CrowdStrike API Base URL #Default : https://api.us-2.crowdstrike.com
-    BASE_URL = 'https://api.us-2.crowdstrike.com'
-
-    # Download directory name
-    DOWNLOAD_DIR = pathlib.Path("downloads")
-
-    # Download directory path
-    DOWNLOAD_DIR_PATH = pathlib.Path(
-        __file__).parent.parent.resolve() / DOWNLOAD_DIR
-
-    SELECTED_DATA_SOURCES = [DATA_SOURCE.DETECT, DATA_SOURCE.QUARANTINE]
-
-    TIME_SPAN = GeneralConfig.TIME_SPAN + 600
-    """
-		###Action Configs
-	"""
-    # User uuid that connector can open case
-    USER_UUID = '<EXAMPLE_USER_UUID>' 
+class VERDICT(Enum):
+    SUSPICIOUS = "suspicious"
+    MALICIOUS = "malicious"
+    CLEAN = "clean"
     
-    # Comment to detection
-    COMMMENT_TO_DETECTION = True
-    
-    # Comment to Quarantine
-    COMMENT_TO_QUARANTINE = True
-    
-    # Contain host machine if a detection or quarantine file affect it
-    CONTAIN_HOST = False
+# Runtime mode of connector
+class RUNTIME_MODE(Enum):
+    DOCKER = "DOCKER"
+    CLI = "CLI"
 
-    # Contain host level from VMRay verdict
-    CONTAIN_HOST_LEVELS = [VERDICT.SUSPICIOUS, VERDICT.MALICIOUS]
-    
-    # Create a Case if a detection or quarantine files when VMRay verdict hits one of CREATE_CASE_LEVELS
-    CREATE_CASE = False
-    
-    # Case Creation level list from VMRay verdict
-    CREATE_CASE_LEVELS = [VERDICT.SUSPICIOUS, VERDICT.MALICIOUS]
-    
-    # User uuid that connector can open case RECOMMENDED: Create a user for connector and follow the cases
-    CASE_USERS = '<EXAMPLE_USER_UUID>'
-    
-    # Find another host with same IOC
-    FIND_ANOTHER_HOST = False 
-    
-    # Find another host event level list from VMRay verdict
-    FIND_ANOTHER_HOST_LEVELS = [VERDICT.SUSPICIOUS, VERDICT.MALICIOUS]
-    
-    # Add Threat classification to detection object as comment
-    ADD_THREAT_CLASSIFICATION = True
-    
-    # Add threat name to detection object as comment
-    ADD_THREAT_NAME = True
+
+# General Configuration
+class GeneralConfig:
+    # Log directory
+    LOG_DIR = pathlib.Path("log")
+
+    # Log file path
+    LOG_FILE_PATH = LOG_DIR / pathlib.Path("cs-connector.log")
+
+    # Log verbosity level
+    LOG_LEVEL = log.DEBUG
+
+    # Selected verdicts's values (!!!Because VMray report has a string value!!!) to process and report back to CrowdStrike
+    SELECTED_VERDICTS = [VERDICT.MALICIOUS.value]
+
+    # Time span between script iterations (seconds) default: 3 hours
+    TIME_SPAN = 20000
+
+    # Runtime mode for script
+    # If selected as CLI, script works only once, you need to create cron job for continuos processing
+    # If selected as DOCKER, scripts works continuously with TIME_SPAN above
+    RUNTIME_MODE = RUNTIME_MODE.CLI

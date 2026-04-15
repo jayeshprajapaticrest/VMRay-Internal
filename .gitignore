@@ -157,3 +157,5 @@ cython_debug/
 __pycache__/
 
 .DS_Store
+# Added by code-review-graph
+.code-review-graph/
