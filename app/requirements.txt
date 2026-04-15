@@ -1,10 +1,10 @@
-certifi==2026.2.25
+# certifi==2026.2.25
 charset-normalizer==3.4.7
 crowdstrike-falconpy==1.6.1
 idna==3.11
-packaging==26.0
+# packaging==26.0
 python-dotenv==1.2.2
 requests==2.33.1
-six==1.17.0
+# six==1.17.0
 urllib3==2.6.3
 vmray-rest-api==6.0.0
